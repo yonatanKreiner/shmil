@@ -118,4 +118,10 @@ venv.bak/
 !.vscode/extensions.json
 
 
+### Videos ###
+videos/
+
+### ffmpeg ###
+/ffmpeg.exe
+
 # End of https://www.gitignore.io/api/python,visualstudiocode
