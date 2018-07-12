@@ -43,30 +43,40 @@ if not video.isOpened():
     sys.exit()
 
 ok, frame = video.read()
-prev_frame = frame
+prev_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
 if not ok:
     print('Cannot read video file')
     sys.exit()
 
 oks = [trackers[i].init(prev_frame, boxs[i]) for i in range(cars_count)]
-
+b = [[125,120,0]]
+z = numpy.zeros((1080,1920, 3), numpy.uint8)
 while True:
     ok, frame = video.read()
-    ok, frame2 = video.read()
-    ok, frame3 = video.read()
-    ok, frame4 = video.read()
+    [video.read() for i in range(10)]
+
     if not ok:
         break
 
     for i in range(cars_count):
         oks[i], boxs[i] = trackers[i].update(frame)
 
-    delta = cv2.absdiff(frame, prev_frame)
+    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    delta = cv2.absdiff(gray_frame, prev_frame)
     kernel = numpy.ones((5, 5), numpy.uint8)
     kernel[2][2] = -24
     masked = cv2.dilate(delta, kernel, iterations = 1)
     thresh = cv2.threshold(masked, 100, 255, cv2.THRESH_BINARY)[1]
+    #points = cv2.findContours(thresh, cv2.RETR_FLOODFILL, cv2.CHAIN_APPROX_SIMPLE)
+    points = cv2.findNonZero(thresh)
+    if points is not None:
+        for p in points:
+            point = p[0]     
+            p1 = (point[0], point[1])
+            p2 = (p1[0] +1, p1[1] + 1)
+            cv2.line(z, p1, p2, (255,0,0), 2)  
+            #frame.itemset(tuple(point), 0)
 
     for i in range(cars_count):
         if oks[i]:
@@ -79,11 +89,12 @@ while True:
         if (len(routes[i]) > 0):
             # drawRoute(routes[i], frame, colors[i])
             pass
-
-    cv2.imshow("Tracking", thresh)
+    
+    dst = cv2.addWeighted(frame, 0.7, z, 0.3, 0)
+    cv2.imshow("Tracking", dst)
 
     k = cv2.waitKey(1) & 0xff
     if k == 27 : break
 
-    prev_frame = frame
+    prev_frame = gray_frame
     #cv2.waitKey()
